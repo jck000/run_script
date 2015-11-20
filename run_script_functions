@@ -1,0 +1,129 @@
+#
+# Description:
+#    Functions for run_script.sh
+
+#
+# Check if this program is already running and if so, exit.
+#
+
+ck_n_put_lock() {
+
+  if [ -n "$LOCK" ] ; then
+    return
+  fi
+
+  PROC2LOCK=$1  ### process to lock
+  CKTIME=$2     ### wait for lock to be released. (unused)
+  pscount=0
+  LOCKFILE=$APPHOME/locks/LCK..$PROC2LOCK   ### lock file name
+
+  runpid=`cat $LOCKFILE 2> /dev/null`      ### Get process ID
+  if [ -n "$runpid" ] ; then               
+    psrunpid=`ps -p$runpid | grep $runpid` ### Is it really running?
+    if [ -n "$psrunpid" ] ; then
+      exit 0
+    fi
+    if [ ! -z "$CKTIME" ] ; then          ### (unused)
+      if [ $CKTIME = "YES" ] ; then
+        ISTHISOLD=`$APPBIN/lock_too_old.pl $LOCKFILE`
+        echo "IS THIS OLD = $ISTHISOLD\n"
+        if [ $ISTHISOLD = "TRUE" ] ; then    ### Is it over five minutes old?
+          psrunpid2=`ps -few|grep $runpid | grep raw` ### Is raw running?
+          if [ -n "$psrunpid2" ] ; then
+            kill -9 $psrunpid2  ### Kill raw.pl
+          fi
+          kill -9 $psrunpid   ### Kill linger_ld_credit.sh
+        fi
+      fi
+    fi
+  fi
+  #  echo "$$" > $LOCKFILE
+}
+
+
+#
+# Remove the lock.
+#
+
+release_lock() {
+  if [ -n "$LOCK" ] ; then
+    return
+  fi
+
+  PROC2LOCK=$1
+  LOCKFILE=$APPHOME/locks/LCK..$PROC2LOCK
+  rm $LOCKFILE          ### remove lock file
+}
+
+
+#
+# Run the script.
+#
+
+do_run_script() {
+
+  LOCKNAME="$1"
+  shift
+  SCRIPTNAME="$1"
+  shift
+  ARGS=$@
+
+  cd $APPBIN
+  ck_n_put_lock $LOCKNAME
+
+  if [ -n "$NOTEE" ] ; then
+
+    if [ -n "$DEBUG" ] ; then
+      sh -x $APPBIN/$SCRIPTNAME $ARGS 
+    else
+      $APPBIN/$SCRIPTNAME $ARGS 
+    fi
+
+#  else 
+#
+#    if [ -n "$DEBUG" ] ; then
+#      sh -x $APPBIN/$SCRIPTNAME $ARGS |tee -a $APPLOG
+#    else
+#      $APPBIN/$SCRIPTNAME $ARGS |tee -a $APPLOG
+#    fi
+
+  fi
+  release_lock $LOCKNAME
+}
+
+
+#
+# Send email notices.
+#
+
+send_notices() {
+  if [ -n "$EMAIL" ] ; then
+    return
+  fi
+
+  echo "To: $EMAIL_TO
+Reply-to: $EMAIL_REPLYTO
+From: $EMAIL_FROM
+Subject: $EMAIL_SUBJECT
+
+$@ started at $STARTDATE
+$@ ended at $ENDDATE
+
+" > $APPTMP/$progname.txt
+
+## Grab end of log file
+if [ -f $APPHOME/logs/$progname.log ] ; then
+  tail -50 $APPHOME/logs/$progname.log >> $APPTMP/$progname.txt
+fi
+
+## Grab error 
+if [ -f $APPTMP/$progname.err ] ; then
+  cat $APPTMP/$progname.err >> $APPTMP/$progname.txt
+  rm -f $APPTMP/$progname.err
+fi
+
+cat $APPTMP/$progname.txt | $SENDMAIL
+
+}
+
+
