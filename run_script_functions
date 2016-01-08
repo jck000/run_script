@@ -57,6 +57,32 @@ release_lock() {
 
 
 #
+# Initialize a directory
+#
+
+do_initialize() {
+
+  INIT_DIR="$1"
+
+  if [ ! -d "$INIT_DIR" ] ; then
+    echo "Directory $INIT_DIR must exist in order to initialize.\n"
+  else 
+    cd $INIT_DIR
+    DIRLIST="conf locks logs"
+    for i in `echo $DIRLIST`; do
+      if [ ! -d $i ] ; then
+        echo "Creating $i"
+        mkdir $i
+      else 
+        echo "Directory $i already exists\n"
+      fi
+    done
+  fi
+
+}
+
+
+#
 # Run the script.
 #
 

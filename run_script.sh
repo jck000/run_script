@@ -2,8 +2,8 @@
 
 #
 # Description:
-#    This is a generic script used to run other scripts with specific environment/configuration also it enforces that 
-#    only a single copy of the running script runs at one time.
+#    This is a generic script used to run other scripts with specific environment/configuration also it 
+#    enforces that only a single copy of the running script runs at one time.
 #
 # Usage: 
 #    run_script.sh 
@@ -46,6 +46,10 @@ Usage:
 
     --DEBUG                - Run in debug mode
 
+    --init                 - Create application directory structure and create default configuration file
+
+    --init_dir="folder"    - Install this script into this folder.  Folder must exist.  Full path.
+
     --h|--help             - Detailed help.
 
     --usage                - This screen
@@ -80,9 +84,11 @@ Help:
                     /app1
                          /conf   <-- application specific configuration file(s)
                          /locks  <-- application lock file location
+                         /logs   <-- application log file location
                     /app2
                          /conf
                          /locks
+                         /logs   
 
     Lock files are script.lck and contains the process id.
 
@@ -197,6 +203,6 @@ done
 
 display_w_timestamp "START $EXEC $ARGS"
 do_run_script $EXEC $ARGS   ### Run it!
-display_w_timestamp "START $EXEC $ARGS"
+display_w_timestamp "END $EXEC $ARGS"
 
 
