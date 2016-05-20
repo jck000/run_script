@@ -1,6 +1,8 @@
 #!/bin/sh 
 
 #
+# Author: Jack Bilemjian jck000@gmail.com
+#
 # Description:
 #    This is a generic script used to run other scripts with specific environment/configuration also it 
 #    enforces that only a single copy of the running script runs at one time.
@@ -12,16 +14,10 @@
 #
 # Set up default environment variables
 #
-umask 000
 
-MYHOSTNAME=`hostname|sed 's/\..*$//'`
+. /usr/local/bin/run_script_functions
 
-display_w_timestamp() {
-  disptime="`date +'%Y-%m-%d %H:%M:%S'`"
-
-  echo "$disptime $1"
-
-}
+HOSTNAME=`hostname|sed 's/\..*$//'`
 
 #
 # Help and usage information.
@@ -33,22 +29,16 @@ Usage:
 
   run_script.sh [OPTIONS]
 
-    --exec=<script>        - script to execute.  Include full path.
+    --exec=<script>        - script to execute.  Include full path and all arguments.
 
     --conf=<config>        - configuration file.  Include full path.
 
-    --args="arg1 arg2 ..." - arguments to pass to script
-
-    --env:var="val"        - Set environment variables
+    --env:var="val"        - Set environment variables.  Use this to override some variables from the config file
 
     --nolock               - Default is to place a lock.  -nolock will NOT place a lock so that
                              You can run multiple instances of this script.
 
     --DEBUG                - Run in debug mode
-
-    --init                 - Create application directory structure and create default configuration file
-
-    --init_dir="folder"    - Install this script into this folder.  Folder must exist.  Full path.
 
     --h|--help             - Detailed help.
 
@@ -69,65 +59,33 @@ Help:
 
     run_script.sh        - This script.
     run_script_functions - Functions used by this script
-    run_script_conf      - Default configuration file
+    application.conf     - Application configuration
 
-    This script is designed to be used to setup an environment and run a script or application with that environment.  
-    Also, it's designed to avoid access to system infrustructure in order to avoid permission issues.  In other words, 
-    you can use it without having admin access.  Place this script into /usr/local/bin or $HOME/bin along with 
-    run_script_functions and run_script_conf.  Additionally, you may have multiple config files and specify a different 
+    This script is designed to be used to setup an environment and run a script or application with that 
+    environment.  Also, it's designed to avoid access to system infrustructure so that it avoids permission 
+    issues.  In other words, you can use it without having admin access.  Place this script into /usr/local/bin 
+    along with run_script_functions.  Additionally, you may have multiple config files and specify a different 
     one for each application.  You don't need to hack this script to take care of that.
     
     Look at the directory structure below:
 
-      /home/username
-                    /bin         <-- personal version of run_script.sh
-                    /app1
-                         /conf   <-- application specific configuration file(s)
-                         /locks  <-- application lock file location
-                         /logs   <-- application log file location
-                    /app2
-                         /conf
-                         /locks
-                         /logs   
+      /usr/local/bin         <-- location of run_script.sh and run_script_functions
+      /home/user/app1/conf   <-- application specific configuration file(s)
+                     /locks  <-- application lock file location
+                     /logs   <-- application log file location
+      /data/app2/conf        <-- these could be anywhere
+                /locks
+                /logs   
 
     Lock files are script.lck and contains the process id.
 
     Required variables:
-
+      LOGDIR
 
   "|less
   exit
 
 }
-
-
-# Load funtions
-if [ -f $HOME/bin/run_script_functions ] ; then
-  . $HOME/bin/run_script_functions
-elif [ -f /usr/local/bin/run_script_functions ] ; then
-  . /usr/local/bin/run_script_functions
-else 
-  display_w_timestamp "Functions file does not exist in /usr/local/bin or $HOME/bin"
-  help
-fi
-
-
-# Load config
-if [ -f $HOME/bin/run_script_conf ] ; then
-  . $HOME/bin/run_script_conf
-elif [ -f /usr/local/bin/run_script_conf ] ; then
-  . /usr/local/bin/run_script_conf
-else 
-  display_w_timestamp "Config file does not exist in /usr/local/bin or $HOME/bin"
-  help
-fi
-
-
-# If this is not a terminal, redirect output.  Assuming CRON job.
-if [ ! -t 0 ] ; then
-  exec >> "$LOGDIR/runlog.$TODAY"
-  exec 2>&1
-fi
 
 
 
@@ -142,10 +100,15 @@ while [ $# -ne 0 ] ; do  ### Loop until no more values on the command line
     ;;
     --exec=*)            ### Script to execute incudes full path
       EXEC=`echo $1|cut -d'=' -f2 `; export EXEC
-      if [ -f $CONF ] ; then
-        display_w_timestamp "EXECUTABLE SCRIPT is $EXEC "
+      SCRIPT=`echo $1|cut -d'=' -f2 |cut -d' ' -f1`; export SCRIPT
+
+      APPNAME=`basename $SCRIPT`;export APPNAME
+      APPDIR=`dirname $SCRIPT`;export APPDIR
+
+      if [ -x "$SCRIPT" ] ; then
+        display_w_timestamp "EXECUTABLE SCRIPT is $SCRIPT "
       else
-        display_w_timestamp "EXECUTABLE SCRIPT $EXEC does not exist or is not executable "
+        display_w_timestamp "EXECUTABLE SCRIPT $SCRIPT does not exist or is not executable "
         usage
       fi
     ;;
@@ -162,15 +125,6 @@ while [ $# -ne 0 ] ; do  ### Loop until no more values on the command line
     --args=*)
       ARGS=`echo $1|sed 's/^--args=//'`; export ARGS
     ;;
-    --func=*)
-      FUNC=`echo $1|cut -d'=' -f2 `; export FUNC
-      if [ -x $FUNC ] ; then
-        . $FUNC
-        display_w_timestamp "CUSTOM FUNCTIONS FILE is $FUNC "
-      else
-        display_w_timestamp "CUSTOM FUNCTIONS FILE $FUNC does not exist or is not readable "
-        usage
-      fi
     --env:*)
       SETIT="`echo $1|cut -d':' -f2`"
       VARNAME="`echo $SETIT|cut -d'=' -f1`"
@@ -189,7 +143,9 @@ while [ $# -ne 0 ] ; do  ### Loop until no more values on the command line
       usage
     ;;
     *)
-      display_w_timestamp "ERROR $1 is not an acceptable argument "
+      display_w_timestamp "ERROR $1 is not an acceptable argument 
+
+"
       error 2 $1
       exit
     ;;
@@ -198,11 +154,51 @@ while [ $# -ne 0 ] ; do  ### Loop until no more values on the command line
 done
 
 #
+# Load config
+#
+if [ -z "$CONF" ] ; then
+  display_w_timestamp "Config file is not specified
+
+"
+  help
+fi
+
+#
+# Application tmp directory
+#
+if [ -z "$APPTMP" ] ; then
+  display_w_timestamp "APPTMP is not specified
+
+"
+  help
+fi
+
+#
+# Is there a log directory
+#
+if [ -n "$LOCK" -a -z "$LOGDIR" ] ; then
+  display_w_timestamp "LOGDIR is not specified
+
+"
+  help
+fi
+
+#
+# If this is not a terminal, redirect output.  Assuming CRON job.
+#
+if [ ! -t 0 ] ; then
+  exec >> "$LOGDIR/runlog.$TODAY"
+  exec 2>&1
+fi
+
+#
 # Run it!
 #
 
-display_w_timestamp "START $EXEC $ARGS"
-do_run_script $EXEC $ARGS   ### Run it!
-display_w_timestamp "END $EXEC $ARGS"
+display_w_timestamp "START $SCRIPT "
+do_run_script $EXEC ### Run it!
+display_w_timestamp "END $SCRIPT"
+
+exit 0
 
 
