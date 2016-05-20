@@ -1,9 +1,12 @@
-# run_script
+# RUN SCRIPT
 
 
 ## Description:
     This is a generic script used to run other scripts with specific environment/configuration also it 
     enforces that only a single copy of the running script runs at one time.
+
+## Installation
+    Copy run_script.sh and run_script_functions to /usr/local/bin
 
 ## Usage:
 
@@ -27,17 +30,18 @@
     
   run_script.sh [OPTIONS]
 
-    There are 3 scripts that make up this script.  They should all be placed into /usr/local/bin or $HOME/bin.
+    There are 3 parts to this script.  They should all be placed into /usr/local/bin or $HOME/bin.  Make sure 
+    that the location is part of your path.
 
-    run_script.sh        - This script.
-    run_script_functions - Functions used by this script
-    application.conf     - Application configuration
+    run_script.sh          - Main script.
+    run_script_functions   - Functions used by the main script
+    run_script_sample.conf - A sample application configuration file
 
     This script is designed to be used to setup an environment and run a script or application with that 
     environment.  Also, it's designed to avoid access to system infrustructure so that it avoids permission 
-    issues.  In other words, you can use it without having admin access.  Place this script into /usr/local/bin 
-    along with run_script_functions.  Additionally, you may have multiple config files and specify a different 
-    one for each application.  You don't need to hack this script to take care of that.
+    issues.  In other words, you can use it without having admin access.  Place run_script.sh into 
+    /usr/local/bin along with run_script_functions.  Additionally, you may have multiple config files and 
+    specify a different one for each application.  
     
     Look at the directory structure below:
 
@@ -52,6 +56,7 @@
     Lock files are script.lck and contains the process id.
 
     Required variables:
+      APPTMP
       LOCKDIR
       LOGDIR
 

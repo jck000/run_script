@@ -55,7 +55,7 @@ Help:
     
   run_script.sh [OPTIONS]
 
-    There are 3 scripts that make up this script.  They should all be placed into /usr/local/bin or $HOME/bin.
+    There are 3 parts to this script.  They should all be placed into /usr/local/bin or \$HOME/bin.
 
     run_script.sh        - This script.
     run_script_functions - Functions used by this script
@@ -65,7 +65,7 @@ Help:
     environment.  Also, it's designed to avoid access to system infrustructure so that it avoids permission 
     issues.  In other words, you can use it without having admin access.  Place this script into /usr/local/bin 
     along with run_script_functions.  Additionally, you may have multiple config files and specify a different 
-    one for each application.  You don't need to hack this script to take care of that.
+    one for each application.  
     
     Look at the directory structure below:
 
