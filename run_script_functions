@@ -31,11 +31,11 @@ ck_n_put_lock() {
     return
   fi
 
-  if [ ! -d "$APPDIR/locks" ] ; then
-    mkdir $APPDIR/locks
+  if [ ! -d "$LOCKDIR/locks" ] ; then
+    mkdir $LOCKDIR/locks
   fi
 
-  LOCKFILE=$APPDIR/locks/LCK..$APPNAME   ### lock file name
+  LOCKFILE=$LOCKDIR/locks/LCK..$APPNAME   ### lock file name
 
   runpid=`cat $LOCKFILE 2> /dev/null`      ### Get process ID
   if [ -n "$runpid" ] ; then               
@@ -57,7 +57,7 @@ release_lock() {
     return
   fi
 
-  LOCKFILE=$APPDIR/locks/LCK..$APPNAME
+  LOCKFILE=$LOCKDIR/locks/LCK..$APPNAME
   rm $LOCKFILE          ### remove lock file
 }
 

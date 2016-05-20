@@ -82,6 +82,7 @@ Help:
     Required variables:
       APPTMP
       LOGDIR
+      LOCKDIR
 
   "|less
   exit

@@ -52,5 +52,6 @@
     Lock files are script.lck and contains the process id.
 
     Required variables:
+      LOCKDIR
       LOGDIR
 
